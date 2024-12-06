@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "dotenv": "^16.4.5",
+    "express": "^4.21.1",
     "mocha": "10.7.3",
     "selenium-webdriver": "^4.25.0"
   },

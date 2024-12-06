@@ -2,6 +2,7 @@
 import { By, until, WebDriver, WebElement } from "selenium-webdriver";
 import { writeFile } from "fs";
 import { DASHBOARD_URL } from "./urls";
+import 'dotenv/config';
 
 
 function getPaginationInfo(str: string) {
@@ -29,7 +30,7 @@ export async function getBalance(driver: WebDriver) {
   console.log("Your current balance is: ", rawBalance);
 }
 
-export async function getAllInBankTransactions(driver: WebDriver) {
+export async function getAllInBankTransactions(driver: WebDriver, sendTransactionsToWebhook: boolean = false) {
   await driver.get(DASHBOARD_URL);
   await driver.wait(until.elementsLocated(By.css('.table-saldo-cuenta tr td:nth-child(3)')), 8000);
   const displayAllTransactionIcon = await driver.findElement(By.css('.table-saldo-cuenta tr td:nth-child(3)'));
@@ -42,6 +43,21 @@ export async function getAllInBankTransactions(driver: WebDriver) {
   const table = await driver.findElement(By.css('app-modal-movimientos-cuentas mat-table'));
   const transactions = await getPaginatedTransactions(driver, table, paginatedInfo, []);
   console.log("Transactions returned: ", transactions.length);
+  console.log("Sending transactions to webhook...");
+  if (sendTransactionsToWebhook) {
+    fetch(
+      process.env.WEBHOOK_URL,
+      {
+        method: 'POST',
+        body: JSON.stringify(transactions),
+      }
+    ).then(() => {
+      console.log("Transactions sent to webhook successfully.");
+      // writeTransactionsToFile(transactions);
+    }).catch((e) => {
+      console.error("Error sending transactions to webhook: ", e);
+    });
+  }
   console.log("Writting transactions to file...");
   writeFile('file.txt', JSON.stringify(transactions), function (err) {
     if (err) throw err;

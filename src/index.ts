@@ -8,6 +8,10 @@ import { Options } from "selenium-webdriver/chrome";
 const app = require("express")();
 const port = process.env.PORT || 3000;
 
+app.get("/health", (req: Request, res: Response) => {
+  res.send("Healthy");
+});
+
 app.get("/", async (req: Request, res: Response) => {
   let driver;
   const options = new Options();
@@ -32,6 +36,7 @@ app.get("/", async (req: Request, res: Response) => {
       await getBalance(driver);
       await getAllInBankTransactions(driver, true);
       await logout(driver);
+      console.log("Successfully completed operations");
     }
   } catch (e: any) {
     console.error(e);

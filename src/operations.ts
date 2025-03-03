@@ -1,6 +1,5 @@
 
 import { By, until, WebDriver, WebElement } from "selenium-webdriver";
-import { writeFile } from "fs";
 import { DASHBOARD_URL } from "./urls";
 import 'dotenv/config';
 
@@ -19,32 +18,44 @@ function getPaginationInfo(str: string) {
 }
 
 export async function getBalance(driver: WebDriver) {
+  const logTag = "[operations/getBalance]:";
+  console.log(`${logTag} Getting balance...`);
   await driver.get(DASHBOARD_URL);
+  console.log(`${logTag} Waiting for balance to be displayed...`);
   await driver.wait(until.elementsLocated(By.css('.table-saldo-cuenta tr td:last-child mat-icon')), 8000);
   const displayBalanceIcon = await driver.findElement(By.css('.table-saldo-cuenta tr td:last-child mat-icon'));
   await displayBalanceIcon.click();
+  console.log(`${logTag} Waiting for balance number to be displayed...`);
   await driver.wait(until.elementsLocated(By.css('app-modal-saldo-cuenta table tr td:last-child')), 8000);
   const balanceNumberCell = await driver.findElement(By.css('app-modal-saldo-cuenta table tr td:last-child'));
   await driver.wait(until.elementTextContains(balanceNumberCell, 'Bs'), 8000);
   const rawBalance = await balanceNumberCell.getText();
-  console.log("Your current balance is: ", rawBalance);
+  console.log(`${logTag} Balance number is: ` + rawBalance);
+  return rawBalance;
 }
 
 export async function getAllInBankTransactions(driver: WebDriver, sendTransactionsToWebhook: boolean = false) {
+  const logTag = "[operations/getAllInBankTransactions]:";
+  console.log(`${logTag} Getting all in bank transactions...`);
   await driver.get(DASHBOARD_URL);
   await driver.wait(until.elementsLocated(By.css('.table-saldo-cuenta tr td:nth-child(3)')), 8000);
+  console.log(`${logTag} Displaying all transactions...`);
   const displayAllTransactionIcon = await driver.findElement(By.css('.table-saldo-cuenta tr td:nth-child(3)'));
   await displayAllTransactionIcon.click();
+  console.log(`${logTag} Waiting for transactions to be displayed...`);
   await driver.wait(until.elementsLocated(By.css('app-modal-movimientos-cuentas')), 20000);
   await driver.wait(until.elementsLocated(By.css('div.mat-paginator-range-label')), 20000);
   const paginationLabelContainer = await driver.findElement(By.css('div.mat-paginator-range-label'));
+  console.log(`${logTag} Waiting for pagination label to be displayed...`);
   await driver.wait(until.elementTextIs(paginationLabelContainer, '1 - 10 de 100'), 20000);
   const paginatedInfo = getPaginationInfo(await paginationLabelContainer.getText());
+  console.log(`${logTag} Getting transactions...`);
   const table = await driver.findElement(By.css('app-modal-movimientos-cuentas mat-table'));
   const transactions = await getPaginatedTransactions(driver, table, paginatedInfo, []);
-  console.log("Transactions returned: ", transactions.length);
-  console.log("Sending transactions to webhook...");
+  console.log(`${logTag} Transactions: ` + transactions.length);
+
   if (sendTransactionsToWebhook) {
+    console.log(`${logTag} Sending transactions to webhook...`);
     fetch(
       process.env.WEBHOOK_URL,
       {
@@ -52,23 +63,20 @@ export async function getAllInBankTransactions(driver: WebDriver, sendTransactio
         body: JSON.stringify(transactions),
       }
     ).then(() => {
-      console.log("Transactions sent to webhook successfully.");
+      console.log(`${logTag} Transactions sent to webhook.`);
       // writeTransactionsToFile(transactions);
     }).catch((e) => {
-      console.error("Error sending transactions to webhook: ", e);
+      console.error(`${logTag} Error sending transactions to webhook: `, e);
     });
   }
-  console.log("Writting transactions to file...");
-  writeFile('file.txt', JSON.stringify(transactions), function (err) {
-    if (err) throw err;
-    console.log('Transaction file is created successfully.');
-  });
 }
 
 export async function getPaginatedTransactions(driver: WebDriver, table: WebElement, currentPagination: { start: number; endRange: number; limit: number }, transactions: any[]) {
+  const logTag = "[operations/getPaginatedTransactions]:";
   const rows = await table.findElements(By.css('mat-row'));
-  console.log("Current pagination: ", currentPagination.endRange + " of " + currentPagination.limit);
-  console.log("Getting: ", rows.length + " transactions");
+  console.log(`${logTag} Current pagination: `, currentPagination.endRange + " of " + currentPagination.limit);
+  console.log(`${logTag} Getting: `, rows.length + " transactions");
+
   for (const r of rows) {
     const transactionDate = await r.findElement(By.css('mat-cell:nth-child(1)')).getText();
     const transactionId = await r.findElement(By.css('mat-cell:nth-child(2)')).getText();
@@ -87,6 +95,7 @@ export async function getPaginatedTransactions(driver: WebDriver, table: WebElem
     transactions.push(obj);
   }
   if (currentPagination.endRange !== currentPagination.limit) {
+    console.log(`${logTag} Clicking on next button...`);
     await driver.wait(until.elementsLocated(By.css('button.mat-paginator-navigation-next')), 20000);
     const nextButton = await driver.findElement(By.css('button.mat-paginator-navigation-next'));
     

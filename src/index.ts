@@ -2,8 +2,8 @@ import { Builder, Browser } from "selenium-webdriver";
 import { login, logout } from './auth';
 import { getBalance, getAllInBankTransactions } from './operations';
 import { Request, Response} from "express";
-import 'dotenv/config';
 import { Options } from "selenium-webdriver/chrome";
+import 'dotenv/config';
 
 const app = require("express")();
 const port = process.env.PORT || 3000;
@@ -17,6 +17,7 @@ app.get("/", async (req: Request, res: Response) => {
   const options = new Options();
   options.addArguments(
     "--headless=new",
+    "--user-data-dir=/tmp/user-data",
   );
   try {
     driver = await new Builder()

@@ -1,19 +1,24 @@
 import { Builder, Browser } from "selenium-webdriver";
 import { login, logout } from './auth';
 import { getBalance, getAllInBankTransactions } from './operations';
-import { Request, Response } from "express";
-const express = require('express')
+import { Request, Response} from "express";
 import 'dotenv/config';
+import { Options } from "selenium-webdriver/chrome";
 
-
-const app = express();
+const app = require("express")();
 const port = process.env.PORT || 3000;
 
 app.get("/", async (req: Request, res: Response) => {
   let driver;
-
+  const options = new Options();
+  options.addArguments(
+    "--headless=new",
+  );
   try {
-    driver = await new Builder().forBrowser(Browser.CHROME).build();
+    driver = await new Builder()
+    .forBrowser(Browser.CHROME)
+    .setChromeOptions(options)
+    .build();
     const username = process.env.BDV_USERNAME;
     const password = process.env.BDV_PASSWORD;
     if (!username || !password) {

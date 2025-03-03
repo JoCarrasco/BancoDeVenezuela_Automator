@@ -17,7 +17,7 @@ app.get("/", async (req: Request, res: Response) => {
   const options = new Options();
   options.addArguments(
     "--headless=new",
-    "--user-data-dir=/tmp/user-data",
+    `--user-data-dir=${process.env.USER_DATA_DIR}`,
   );
   try {
     driver = await new Builder()
